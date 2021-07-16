@@ -1,15 +1,14 @@
 -- Create Table Queries
 CREATE TABLE Books(ISBN CHAR(13) PRIMARY KEY,  Title VARCHAR(200), Subject VARCHAR(50), DatePublished DATE);
 CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastName VARCHAR(100), DOB Date);
-
 CREATE TABLE Patrons(
-	Email VARCHAR(100) PRIMARY KEY,  
+	Email VARCHAR(100) PRIMARY KEY,
+	Password VARCHAR(100),  
 	FirstName VARCHAR(100), 
 	LastName VARCHAR(100), 
 	DOB DATE,
 	IsAdmin CHAR(1)
 );
-
 CREATE TABLE Inventory(
 	ISBN CHAR(13) PRIMARY KEY NOT NULL,
 	Quantity INTEGER DEFAULT 1,
@@ -32,23 +31,18 @@ CREATE TABLE Borrow(
 	CONSTRAINT bw_pk PRIMARY KEY(Email, ISBN)
 );
 
-Example:
-CREATE TABLE Bid (Buyer CHAR(9) REFERENCES Buyer, Item INTEGER REFERENCES Item, Time TIMESTAMP(0), Amt NUMERIC(9, 2), CONSTRAINT bid_pk PRIMARY KEY(Buyer, Item, Time));
-
-
 ------------------- Copy into Table Queries -------------------------
 
 \copy Books(ISBN, Title, Subject, DatePublished) FROM '/Users/syeda/Desktop/COP4710FinalProject/Books.csv' WITH DELIMITER ',' CSV HEADER;
-
-
 \copy Authors(AuthorID, FirstName, LastName, DOB) FROM '/Users/syeda/Desktop/COP4710FinalProject/Authors.csv' WITH DELIMITER ',' CSV HEADER;
-
-
 \copy WrittenBy(AuthorID, ISBN) FROM '/Users/syeda/Desktop/COP4710FinalProject/WrittenBy.csv' WITH DELIMITER ',' CSV HEADER;
 
+------------------- Creating Users and Privileges -------------------------
+CREATE USER librarian with encrypted password 'password';
+GRANT CONNECT ON DATABASE bookstore TO librarian;
+GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
 
--- Python queries
-            # Get all the books of that subject to show to patron
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT * FROM books WHERE subject = %s ", [subject])
-                bookresults = cursor.fetchall()
+CREATE USER patron with encrypted password 'password';
+GRANT CONNECT ON DATABASE bookstore TO patron;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
+
