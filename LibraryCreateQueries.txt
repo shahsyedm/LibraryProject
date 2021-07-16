@@ -1,6 +1,7 @@
 -- Create Table Queries
 CREATE TABLE Books(ISBN CHAR(13) PRIMARY KEY,  Title VARCHAR(200), Subject VARCHAR(50), DatePublished DATE);
 CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastName VARCHAR(100), DOB Date);
+
 CREATE TABLE Patrons(
 	Email VARCHAR(100) PRIMARY KEY,  
 	FirstName VARCHAR(100), 
@@ -34,9 +35,16 @@ CREATE TABLE Borrow(
 Example:
 CREATE TABLE Bid (Buyer CHAR(9) REFERENCES Buyer, Item INTEGER REFERENCES Item, Time TIMESTAMP(0), Amt NUMERIC(9, 2), CONSTRAINT bid_pk PRIMARY KEY(Buyer, Item, Time));
 
+
+------------------- Copy into Table Queries -------------------------
+
 \copy Books(ISBN, Title, Subject, DatePublished) FROM '/Users/syeda/Desktop/COP4710FinalProject/Books.csv' WITH DELIMITER ',' CSV HEADER;
+
+
 \copy Authors(AuthorID, FirstName, LastName, DOB) FROM '/Users/syeda/Desktop/COP4710FinalProject/Authors.csv' WITH DELIMITER ',' CSV HEADER;
 
+
+\copy WrittenBy(AuthorID, ISBN) FROM '/Users/syeda/Desktop/COP4710FinalProject/WrittenBy.csv' WITH DELIMITER ',' CSV HEADER;
 
 
 -- Python queries
