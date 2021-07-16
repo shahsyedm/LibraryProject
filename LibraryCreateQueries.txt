@@ -1,7 +1,7 @@
 -- Create Table Queries
 CREATE TABLE Books(ISBN CHAR(13) PRIMARY KEY,  Title VARCHAR(200), Subject VARCHAR(50), DatePublished DATE);
 CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastName VARCHAR(100), DOB Date);
-CREATE TABLE Patrons(
+CREATE TABLE LibraryUser(
 	Email VARCHAR(100) PRIMARY KEY,
 	Password VARCHAR(100),  
 	FirstName VARCHAR(100), 
