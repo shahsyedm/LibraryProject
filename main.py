@@ -2,7 +2,7 @@ import psycopg2
 from enum import Enum
 from datetime import datetime
 
-# UseType enumeration
+# UserType enumeration
 class UserType(Enum):
     LIBRARIAN = 1
     PATRON = 2
