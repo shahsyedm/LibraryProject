@@ -45,4 +45,5 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
 CREATE USER patron with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO patron;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
+GRANT INSERT ON TABLE LibraryUsers TO patron;
 

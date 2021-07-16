@@ -20,7 +20,7 @@ class DataBase():
             user="librarian", 
             password="finalproject"
         )
-        return connection.cursor()
+        return connection
 
     # Get the Patron (Default) connection
     def get_patron_connection(self):
@@ -32,7 +32,7 @@ class DataBase():
             user="patron", 
             password="password"
         )
-        return connection.cursor()
+        return connection
 
 # Form validation 
 def validate_form(formdata, cursor):
@@ -75,7 +75,8 @@ class Views():
         db = DataBase()
 
         # Get the DB cursor
-        cursor = db.get_patron_connection()
+        connection = db.get_patron_connection()
+        cursor = connection.cursor()
 
         # Replace ' to prevent SQL injection
         firstname = input('Enter first name: ').replace('\'', '')
@@ -97,7 +98,12 @@ class Views():
         )
 
         if valid:
+            cursor.execute("INSERT INTO LibraryUsers(email,firstname,lastname,dob,isadmin,password) VALUES (%s, %s, %s, %s, %s, %s)", (email,firstname,lastname,dob,'N',password))
+            connection.commit()
             print('Patron signup successful')
+        cursor.close()
+        connection.close()
+
 
 def MainLoop():
     # db = DataBase()
