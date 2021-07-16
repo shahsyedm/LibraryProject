@@ -1,8 +1,46 @@
 -- Create Table Queries
 CREATE TABLE Books(ISBN CHAR(13) PRIMARY KEY,  Title VARCHAR(200), Subject VARCHAR(50), DatePublished DATE);
 CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastName VARCHAR(100), DOB Date);
-CREATE TABLE Patrons(Email VARCHAR(100) PRIMARY KEY,  FirstName VARCHAR(100), LastName VARCHAR(100), DOB DATE);
-CREATE TABLE WrittenBy(AuthorID CHAR(9), ISBN CHAR(13) );
+CREATE TABLE Patrons(
+	Email VARCHAR(100) PRIMARY KEY,  
+	FirstName VARCHAR(100), 
+	LastName VARCHAR(100), 
+	DOB DATE,
+	IsAdmin CHAR(1)
+);
 
-\copy Books(ISBN, Title, Subject, DatePublished) FROM '/Users/syeda/Desktop/django-postgres/Books.csv' WITH DELIMITER ',' CSV HEADER;
-\copy Authors(AuthorID, FirstName, LastName, DOB) FROM '/Users/syeda/Desktop/django-postgres/Authors.csv' WITH DELIMITER ',' CSV HEADER;
+CREATE TABLE Inventory(
+	ISBN CHAR(13) PRIMARY KEY NOT NULL,
+	Quantity INTEGER DEFAULT 1,
+	CONSTRAINT book_fk FOREIGN KEY(ISBN) REFERENCES Books(ISBN)
+);
+
+------------------- Relationship Tables -------------------------
+
+CREATE TABLE WrittenBy(
+	AuthorID CHAR(9) REFERENCES Authors NOT NULL,
+	ISBN CHAR(13)    REFERENCES Books, 
+	CONSTRAINT wb_pk PRIMARY KEY(AuthorID, ISBN)
+);
+
+CREATE TABLE Borrow(
+	ISBN CHAR(13) 	 REFERENCES Books,
+	Email VARCHAR(100)  REFERENCES Patrons,
+	BorrowDate DATE,
+	DueDate DATE,
+	CONSTRAINT bw_pk PRIMARY KEY(Email, ISBN)
+);
+
+Example:
+CREATE TABLE Bid (Buyer CHAR(9) REFERENCES Buyer, Item INTEGER REFERENCES Item, Time TIMESTAMP(0), Amt NUMERIC(9, 2), CONSTRAINT bid_pk PRIMARY KEY(Buyer, Item, Time));
+
+\copy Books(ISBN, Title, Subject, DatePublished) FROM '/Users/syeda/Desktop/COP4710FinalProject/Books.csv' WITH DELIMITER ',' CSV HEADER;
+\copy Authors(AuthorID, FirstName, LastName, DOB) FROM '/Users/syeda/Desktop/COP4710FinalProject/Authors.csv' WITH DELIMITER ',' CSV HEADER;
+
+
+
+-- Python queries
+            # Get all the books of that subject to show to patron
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT * FROM books WHERE subject = %s ", [subject])
+                bookresults = cursor.fetchall()
