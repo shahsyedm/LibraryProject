@@ -18,7 +18,7 @@ class DataBase():
             port = 5432, 
             database="bookstore", 
             user="librarian", 
-            password="finalproject"
+            password="password"
         )
         return connection
 
@@ -154,6 +154,8 @@ class Views():
         return db.result_to_dict(cursor,result)
 
 def MainLoop():
+    db = DataBase()
+    db.get_librarian_connection()
     user = UserType.ANONYMOUS
     run_loop = True
     while run_loop:
@@ -239,9 +241,11 @@ def MainLoop():
                 run_loop = False
                 print('Goodbye.')
 
-                
-
+            
+# Run the Main event loop
 MainLoop()
+
+# Project Overview
 
 # Regular User FUNCTIONALITY
 # signup view
@@ -266,6 +270,6 @@ MainLoop()
         # Input: Email
         # Input: ISBN
         # Delete the borrow entry (INSERT)
-
     # View all emails
     # View all books
+    # View overdue books and who has them
