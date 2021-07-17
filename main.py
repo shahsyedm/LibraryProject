@@ -314,10 +314,16 @@ class Views():
             print('Sorry, that was not a valid selection.')
             return None
 
+        # Check that they did not select invalid integer
+        if cmd > len(subjects):
+            print('Sorry, that was not a valid selection.')
+            return None
+
+        # Get the subject
         subject = subjects[cmd-1]
         cursor.execute("""SELECT Title, FirstName, LastName, ISBN FROM Books 
                           NATURAL JOIN WrittenBy NATURAL JOIN Authors 
-                          WHERE subject = %s;""", (subject,))
+                          WHERE subject = %s""", (subject,))
         query = cursor.fetchall()
         print('------------------------------------------------')
         print('Search Results: ')
@@ -352,6 +358,10 @@ class Views():
                     WHERE lastname = %s ORDER BY firstname,lastname""", (author_last_name,))
         
         query = cursor.fetchall()
+        if len(query) == 0:
+            print('Sorry, we do not carry books by that author.\n')
+            return None
+
         query = [db.result_to_dict(cursor,item) for item in query]
 
         print('------------------------------------------------')
@@ -413,6 +423,10 @@ class Views():
                 print('------------------------------------------------')
         print('\n')
 
+        # Close the db connection
+        cursor.close()
+        connection.close()
+
     def book_recommendation_view(self):
         # Get DB connection class
         db = DataBase()
@@ -420,6 +434,49 @@ class Views():
         # Get the DB cursor
         connection = db.get_patron_connection()
         cursor = connection.cursor()
+
+        # Get the list of available subjects
+        cursor.execute("SELECT DISTINCT subject FROM Books")
+        query = cursor.fetchall()
+        subjects = [item[0] for item in query]
+
+        print('---------------- Book Recommendation ----------------')
+        print('Select subject: ')
+        for i in range(1,len(subjects)+1):
+            print(str(i) + ': ' + subjects[i-1])
+        cmd = input('Selection: ')
+
+        try:
+            cmd = int(cmd)
+        except ValueError:
+            print('Sorry, that was not a valid selection.')
+            return None
+
+        # Check that they did not select invalid integer
+        if cmd > len(subjects):
+            print('Sorry, that was not a valid selection.')
+            return None
+        
+        # Get the subject
+        subject = subjects[cmd-1]
+        cursor.execute("""SELECT Title, FirstName, LastName, ISBN FROM Books 
+                          NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+                          WHERE subject = %s ORDER BY RANDOM() LIMIT 1""", (subject,))
+
+        query = cursor.fetchone()
+        book = db.result_to_dict(cursor,query)
+
+        # Print out the recommended book
+        print('------------------------------------------------')
+        print('Here is your recommendation: ')
+        print('------------------------------------------------')
+        print('Title: '  + book['title'])
+        print('Author: ' + book['firstname'] + ' ' + book['lastname'])
+        print('ISBN: '   + book['isbn'])
+        print('\n')
+        # Close the db connection
+        cursor.close()
+        connection.close()
 
 def MainLoop():
     # Session to hold any session data for keeping track of system state
@@ -500,10 +557,10 @@ def MainLoop():
         if session_data['user'] == UserType.PATRON:
             print('---------------- Patron Menu ({}) ----------------'.format(session_data['email']))
             print('Select Option: ')
-            print('1: Search by subject')           # Main feature -DONE
-            print('2: Search by author')            # Main feature -DONE
+            print('1: Search by subject')           # Main feature  -DONE
+            print('2: Search by author')            # Main feature  -DONE
             print('3: View my borrowed books')      # Extra feature -DONE
-            print('4: Get a book recommendation')   # Extra feature
+            print('4: Get a book recommendation')   # Extra feature -DONE
             print('q: quit')
             cmd = input('Selection: ')
 
@@ -518,8 +575,7 @@ def MainLoop():
                 view.borrowed_books_view(email=session_data['email'])
             elif cmd == '4':
                 view = Views()
-                
-                print('Get a book recommendation')
+                view.book_recommendation_view()
             elif cmd == 'q':
                 run_loop = False
                 print('Goodbye.')

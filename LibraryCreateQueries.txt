@@ -41,6 +41,7 @@ CREATE TABLE Borrow(
 
 \copy Inventory(ISBN, Quantity) FROM '/Users/syeda/Desktop/COP4710FinalProject/Inventory.csv' WITH DELIMITER ',' CSV HEADER;
 ------------------- Creating Users and Privileges -------------------------
+
 CREATE USER librarian with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO librarian;
 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
@@ -48,6 +49,22 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
 CREATE USER patron with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO patron;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
-GRANT INSERT ON TABLE LibraryUsers TO patron;
 
-------------------- Creating Views for UsersTypes -------------------------
+------------------------------------------------
+cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,))
+cursor.execute("SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s",(email,password))
+cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,))
+cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))
+cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
+cursor.execute("SELECT * FROM Borrow WHERE email = %s AND isbn = %s", (email,isbn))
+cursor.execute("SELECT DISTINCT subject FROM Books")
+cursor.execute("SELECT Title, FirstName, LastName, ISBN 
+		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+		WHERE subject = %s", (subject,))
+cursor.execute("SELECT Title, FirstName, LastName, subject, datepublished, ISBN 
+		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+		WHERE lastname = %s ORDER BY firstname,lastname", (author_last_name,))
+cursor.execute("SELECT title,duedate FROM Borrow NATURAL JOIN Books WHERE email = %s", (email,))
+cursor.execute("SELECT Title, FirstName, LastName, ISBN 
+		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+              WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
