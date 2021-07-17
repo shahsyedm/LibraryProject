@@ -33,6 +33,22 @@ class DataBase():
             password="password"
         )
         return connection
+    
+    # Clean input function (remove ' from input )
+    def get_clean_input(self, message):
+        return input(message).replace('\'', '')
+
+    # Description: can return a query result (one query as a dictionary)
+    # This is useful for returning the user information 
+    # as a mapping of attribute to value
+    # rather than indexing through it like an array
+    # Function: Take database cursor and return fetchone() as a dict(attribute,value)
+    def result_to_dict(self, cursor, result):
+        keys   = cursor.description
+        keys   = [col[0] for col in keys] # description returns Column('attributename','typecode')
+        values = result
+        data   = dict(zip(keys,values))
+        return data
 
 # Form validation 
 def validate_form(formdata, cursor):
@@ -79,11 +95,11 @@ class Views():
         cursor = connection.cursor()
 
         # Replace ' to prevent SQL injection
-        firstname = input('Enter first name: ').replace('\'', '')
-        lastname  = input('Enter last name: ').replace('\'', '')
-        dob       = input('Enter date of birth: ').replace('\'', '')
-        email     = input('Enter email: ').replace('\'', '')
-        password  = input('Enter password: ').replace('\'', '')
+        firstname = db.get_clean_input('Enter first name: ')
+        lastname  = db.get_clean_input('Enter last name: ')
+        dob       = db.get_clean_input('Enter date of birth: ')
+        email     = db.get_clean_input('Enter email: ')
+        password  = db.get_clean_input('Enter password: ')
 
         # Check if the form is valid
         valid = validate_form(
@@ -98,33 +114,132 @@ class Views():
         )
 
         if valid:
-            cursor.execute("INSERT INTO LibraryUsers(email,firstname,lastname,dob,isadmin,password) VALUES (%s, %s, %s, %s, %s, %s)", (email,firstname,lastname,dob,'N',password))
+            cursor.execute(
+                """INSERT INTO LibraryUsers(email,firstname,lastname,dob,isadmin,password) 
+                VALUES (%s, %s, %s, %s, %s, %s)""", 
+                (email,firstname,lastname,dob,'N',password)
+            )
             connection.commit()
-            print('Patron signup successful')
+            print('Patron signup successful\n')
+
         cursor.close()
         connection.close()
 
+    def login_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_patron_connection()
+        cursor = connection.cursor()
+
+        # Ask user for email and password
+        email    = db.get_clean_input('Email: ').replace('\n','')
+        password = db.get_clean_input('Password: ').replace('\n', '')
+
+        # Get user with that email and password
+        cursor.execute("""SELECT email,isadmin FROM LibraryUsers
+                                  WHERE email = %s AND password = %s""",
+                                  (email,password)
+        )
+        result = cursor.fetchone()
+        # Return the result of the query which is either:
+        #   None         (unsuccessful login)
+        #   query result (if successful login)
+        if result == None:
+            print('Sorry, we could not authenticate your credentials.')
+            print('Returning to the main menu.\n')
+            return None
+        print('Login successful.\n')
+        return db.result_to_dict(cursor,result)
 
 def MainLoop():
-    # db = DataBase()
-    # cursor = db.get_patron_connection()
-    # cursor.execute("SELECT * FROM Authors")
-    # print(cursor.fetchone())
     user = UserType.ANONYMOUS
     run_loop = True
     while run_loop:
+
+        # Anonymous User menu
         if user == UserType.ANONYMOUS:
-            print('---------------- Welcome ANON ----------------')
+            print('---------------- Main Menu ----------------')
             print('Select Option: ')
             print('1: Sign up')
+            print('2: Login')
             print('q: quit')
             cmd = input('Selection: ')
+            
             if cmd == '1':
                 print('Send to sign up view')
                 view = Views()
                 view.sign_up_view()
+            if cmd == '2':
+                print('Send to login view')
+                view = Views()
+
+                # Get result of logging in as a dictionary with email and isadmin
+                result = view.login_view() # keys are 'email' and 'isadmin'
+                if result == None:
+                    # This means the user was not logged in successfully
+                    continue
+                elif result['isadmin'] == 'Y':
+                    # Set the user type to librarian
+                    user = UserType.LIBRARIAN
+                elif result['isadmin'] == 'N':
+                    # Set the user type to patron
+                    user = UserType.PATRON
             elif cmd == 'q':
                 run_loop = False
+                print('Goodbye.')
+
+        # Librarian User menu
+        if user == UserType.LIBRARIAN:
+            print('---------------- Librarian / Administrative Menu ----------------')
+            print('Select Option: ')
+            print('1: Assign book to patron')   # Main feature
+            print('2: Process book return')     # Main feature
+            print('3: View book catalog')       # Extra feature
+            print('4: View registered patrons') # Extra feature
+            print('5: View overdue books')      # Extra feature
+            print('q: quit')
+            cmd = input('Selection: ')
+
+            if cmd   == '1':
+                print('Assign book to patron') 
+            elif cmd == '2':
+                print('Process book return')
+            elif cmd == '3':
+                print('View book catalog')
+            elif cmd == '4':
+                print('View registered patrons')
+            elif cmd == '5':
+                print('View overdue books')
+            elif cmd == 'q':
+                run_loop = False
+                print('Goodbye.')
+        
+        # Patron User Menu
+        if user == UserType.PATRON:
+            print('---------------- Patron Menu ----------------')
+            print('Select Option: ')
+            print('1: Search by subject')           # Main feature
+            print('2: Search by author')            # Main feature
+            print('3: View my borrowed books')      # Extra feature
+            print('4: Get a book recommendation')   # Extra feature
+            print('q: quit')
+            cmd = input('Selection: ')
+
+            if cmd   == '1':
+                print('Search by subject') 
+            elif cmd == '2':
+                print('Search by author')
+            elif cmd == '3':
+                print('View my borrowed books')
+            elif cmd == '4':
+                print('Get a book recommendation')
+            elif cmd == 'q':
+                run_loop = False
+                print('Goodbye.')
+
+                
 
 MainLoop()
 

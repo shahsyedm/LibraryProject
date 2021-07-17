@@ -47,3 +47,4 @@ GRANT CONNECT ON DATABASE bookstore TO patron;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
 GRANT INSERT ON TABLE LibraryUsers TO patron;
 
+------------------- Creating Views for UsersTypes -------------------------
