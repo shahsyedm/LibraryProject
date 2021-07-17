@@ -34,7 +34,7 @@ class DataBase():
         )
         return connection
     
-    # Clean input function (remove ' from input )
+    # Clean input function (remove ' from input ) for SQL injection defense
     def get_clean_input(self, message):
         return input(message).replace('\'', '')
 
@@ -134,8 +134,8 @@ class Views():
         cursor = connection.cursor()
 
         # Ask user for email and password
-        email    = db.get_clean_input('Email: ').replace('\n','')
-        password = db.get_clean_input('Password: ').replace('\n', '')
+        email    = db.get_clean_input('Email: ')
+        password = db.get_clean_input('Password: ')
 
         # Get user with that email and password
         cursor.execute("""SELECT email,isadmin FROM LibraryUsers
@@ -154,12 +154,14 @@ class Views():
         return db.result_to_dict(cursor,result)
 
 def MainLoop():
+    # Session to hold any session data for keeping track of system state
     session_data = {}
     session_data['user'] = UserType.ANONYMOUS
 
+    # While user has not quit, run the main loop
     run_loop = True
+    
     while run_loop:
-
         # Anonymous User menu
         if session_data['user'] == UserType.ANONYMOUS:
             print('---------------- Main Menu ----------------')
