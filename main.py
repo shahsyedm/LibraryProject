@@ -1,6 +1,6 @@
 import psycopg2
 from enum import Enum
-from datetime import datetime
+import datetime
 
 # UserType enumeration
 class UserType(Enum):
@@ -79,7 +79,7 @@ def validate_form(formdata, cursor):
     # DOB format should be "MM/DD/YYYY"
     format = "%m/%d/%Y" 
     try:
-        datetime.strptime(dob, format)
+        datetime.datetime.strptime(dob, format)
     except ValueError:
         print("This is the incorrect date format. It should be DD/MM/YYYY")
         return False
@@ -138,11 +138,9 @@ class Views():
         password = db.get_clean_input('Password: ')
 
         # Get user with that email and password
-        cursor.execute("""SELECT email,isadmin FROM LibraryUsers
-                                  WHERE email = %s AND password = %s""",
-                                  (email,password)
-        )
-        result = cursor.fetchone()
+        cursor.execute("""SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s""",(email,password))
+        result = cursor.fetchone() # [email,isadmin]
+
         # Return the result of the query which is either:
         #   None         (unsuccessful login)
         #   query result (if successful login)
@@ -153,6 +151,58 @@ class Views():
         print('Login successful.\n')
         return db.result_to_dict(cursor,result)
 
+    def assign_book_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_librarian_connection()
+        cursor = connection.cursor()
+
+        # Ask user for email and isbn
+        print('Assign book: [patron email][book isbn]')
+        email    = db.get_clean_input('Patron email: ')
+        isbn     = db.get_clean_input('ISBN: ')
+
+        # Get book with that isbn
+        #cursor.execute("""SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s""",(email,password))
+        cursor.execute("""SELECT * FROM Books WHERE isbn = %s""", (isbn,))
+        book = cursor.fetchone() # result of query
+
+        if book == None:
+            print('Could not find the book.')
+            return None
+        book = db.result_to_dict(cursor,book)       # get attribute -> value
+
+
+        # Get user with that email
+        cursor.execute("""SELECT * FROM LibraryUsers WHERE email = %s""", (email,))
+        patron = cursor.fetchone() # result of query
+
+        if patron == None:
+            print('Could not find the patron.')
+            return None
+        patron = db.result_to_dict(cursor,patron)   # get attribute -> value
+
+        # Format for our dates
+        format = "%m/%d/%Y" 
+        today = datetime.datetime.today()                       # get today as datetime obj
+        strToday = datetime.datetime.strftime(today, format)
+        duedate = today + datetime.timedelta(days=14)
+        strDuedate = datetime.datetime.strftime(duedate, format)
+
+        cursor.execute(
+                """INSERT INTO Borrow(isbn,email,borrowdate,duedate) 
+                VALUES (%s, %s, %s, %s)""", 
+                (book['isbn'],patron['email'],strToday,strDuedate)
+        )
+        connection.commit()
+        print('Successfully checked book out. \'{}\' is due on {}.'.format(book['title'], strDuedate))
+
+        cursor.close()
+        connection.close()
+
+
 def MainLoop():
     # Session to hold any session data for keeping track of system state
     session_data = {}
@@ -160,7 +210,7 @@ def MainLoop():
 
     # While user has not quit, run the main loop
     run_loop = True
-    
+
     while run_loop:
         # Anonymous User menu
         if session_data['user'] == UserType.ANONYMOUS:
@@ -214,6 +264,8 @@ def MainLoop():
 
             if cmd   == '1':
                 print('Assign book to patron')
+                view = Views()
+                view.assign_book_view()
             elif cmd == '2':
                 print('Process book return')
             elif cmd == '3':
