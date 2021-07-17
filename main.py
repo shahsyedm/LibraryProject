@@ -2,6 +2,8 @@ import psycopg2
 from enum import Enum
 import datetime
 
+FORMAT = "%m/%d/%Y" 
+
 # UserType enumeration
 class UserType(Enum):
     LIBRARIAN = 1
@@ -77,9 +79,8 @@ def validate_form(formdata, cursor):
         return False
 
     # DOB format should be "MM/DD/YYYY"
-    format = "%m/%d/%Y" 
     try:
-        datetime.datetime.strptime(dob, format)
+        datetime.datetime.strptime(dob, FORMAT)
     except ValueError:
         print("This is the incorrect date format. It should be DD/MM/YYYY")
         return False
@@ -174,31 +175,52 @@ class Views():
             return None
         book = db.result_to_dict(cursor,book)       # get attribute -> value
 
+        # Make sure quantity > 0
+        cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))
+        inventory = cursor.fetchone()
+        inventory = db.result_to_dict(cursor,inventory)
+        
+        # get the quantity and make sure the book is available
+        quantity = int(inventory['quantity'])
+        if quantity < 1:
+            # Get the most recent due date for that book
+            cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
+            query = cursor.fetchone() # not actually duedate it is array[duedate]
+            next_available_date = datetime.datetime.strftime(query[0], FORMAT)
+            print('Sorry, that book is out of stock. It will be available on ' + next_available_date)
+            return None
 
         # Get user with that email
         cursor.execute("""SELECT * FROM LibraryUsers WHERE email = %s""", (email,))
         patron = cursor.fetchone() # result of query
 
+        # Check if the patron was found
         if patron == None:
             print('Could not find the patron.')
             return None
         patron = db.result_to_dict(cursor,patron)   # get attribute -> value
 
         # Format for our dates
-        format = "%m/%d/%Y" 
         today = datetime.datetime.today()                       # get today as datetime obj
-        strToday = datetime.datetime.strftime(today, format)
+        strToday = datetime.datetime.strftime(today, FORMAT)
         duedate = today + datetime.timedelta(days=14)
-        strDuedate = datetime.datetime.strftime(duedate, format)
+        strDuedate = datetime.datetime.strftime(duedate, FORMAT)
 
         cursor.execute(
                 """INSERT INTO Borrow(isbn,email,borrowdate,duedate) 
                 VALUES (%s, %s, %s, %s)""", 
                 (book['isbn'],patron['email'],strToday,strDuedate)
         )
-        connection.commit()
-        print('Successfully checked book out. \'{}\' is due on {}.'.format(book['title'], strDuedate))
 
+        print('Successfully checked book out to {}. \'{}\' is due on {}.'.format(
+                patron['firstname'] + ' ' + patron['lastname'],book['title'], strDuedate
+            )
+        )
+
+        # Update inventory, setting that book's quantity - 1
+        cursor.execute("UPDATE Inventory SET quantity = quantity - 1 WHERE isbn = %s", (book['isbn'],))
+
+        connection.commit()
         cursor.close()
         connection.close()
 
@@ -254,7 +276,7 @@ def MainLoop():
         if session_data['user']== UserType.LIBRARIAN:
             print('---------------- Librarian Menu ({})----------------'.format(session_data['email']))
             print('Select Option: ')
-            print('1: Assign book to patron')   # Main feature
+            print('1: Assign book to patron')   # Main feature -DONE
             print('2: Process book return')     # Main feature
             print('3: View book catalog')       # Extra feature
             print('4: View registered patrons') # Extra feature

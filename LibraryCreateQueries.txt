@@ -11,7 +11,7 @@ CREATE TABLE LibraryUser(
 );
 CREATE TABLE Inventory(
 	ISBN CHAR(13) PRIMARY KEY NOT NULL,
-	Quantity INTEGER DEFAULT 1,
+	Quantity INTEGER,
 	CONSTRAINT book_fk FOREIGN KEY(ISBN) REFERENCES Books(ISBN)
 );
 
@@ -34,9 +34,12 @@ CREATE TABLE Borrow(
 ------------------- Copy into Table Queries -------------------------
 
 \copy Books(ISBN, Title, Subject, DatePublished) FROM '/Users/syeda/Desktop/COP4710FinalProject/Books.csv' WITH DELIMITER ',' CSV HEADER;
+
 \copy Authors(AuthorID, FirstName, LastName, DOB) FROM '/Users/syeda/Desktop/COP4710FinalProject/Authors.csv' WITH DELIMITER ',' CSV HEADER;
+
 \copy WrittenBy(AuthorID, ISBN) FROM '/Users/syeda/Desktop/COP4710FinalProject/WrittenBy.csv' WITH DELIMITER ',' CSV HEADER;
 
+\copy Inventory(ISBN, Quantity) FROM '/Users/syeda/Desktop/COP4710FinalProject/Inventory.csv' WITH DELIMITER ',' CSV HEADER;
 ------------------- Creating Users and Privileges -------------------------
 CREATE USER librarian with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO librarian;
