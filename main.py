@@ -14,7 +14,7 @@ class DataBase():
     def get_librarian_connection(self):
         # If librarian, then connect like this
         connection = psycopg2.connect(
-            host="localhost", 
+            host="localhost",
             port = 5432, 
             database="bookstore", 
             user="librarian", 
@@ -154,12 +154,14 @@ class Views():
         return db.result_to_dict(cursor,result)
 
 def MainLoop():
-    user = UserType.ANONYMOUS
+    session_data = {}
+    session_data['user'] = UserType.ANONYMOUS
+
     run_loop = True
     while run_loop:
 
         # Anonymous User menu
-        if user == UserType.ANONYMOUS:
+        if session_data['user'] == UserType.ANONYMOUS:
             print('---------------- Main Menu ----------------')
             print('Select Option: ')
             print('1: Sign up')
@@ -180,19 +182,25 @@ def MainLoop():
                 if result == None:
                     # This means the user was not logged in successfully
                     continue
-                elif result['isadmin'] == 'Y':
+
+                # Set the session data for the logged in user
+                # Save the appropriate user type in session_data
+                if result['isadmin'] == 'Y':
                     # Set the user type to librarian
-                    user = UserType.LIBRARIAN
+                    session_data['user']  = UserType.LIBRARIAN
                 elif result['isadmin'] == 'N':
                     # Set the user type to patron
-                    user = UserType.PATRON
+                    session_data['user'] = UserType.PATRON
+
+                # Save the user email in session_data (email is pk in LibraryUsers table)
+                session_data['email'] = result['email']
             elif cmd == 'q':
                 run_loop = False
                 print('Goodbye.')
 
         # Librarian User menu
-        if user == UserType.LIBRARIAN:
-            print('---------------- Librarian / Administrative Menu ----------------')
+        if session_data['user']== UserType.LIBRARIAN:
+            print('---------------- Librarian Menu ({})----------------'.format(session_data['email']))
             print('Select Option: ')
             print('1: Assign book to patron')   # Main feature
             print('2: Process book return')     # Main feature
@@ -217,8 +225,8 @@ def MainLoop():
                 print('Goodbye.')
         
         # Patron User Menu
-        if user == UserType.PATRON:
-            print('---------------- Patron Menu ----------------')
+        if session_data['user'] == UserType.PATRON:
+            print('---------------- Patron Menu ({}) ----------------'.format(session_data['email']))
             print('Select Option: ')
             print('1: Search by subject')           # Main feature
             print('2: Search by author')            # Main feature
