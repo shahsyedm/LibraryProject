@@ -154,8 +154,6 @@ class Views():
         return db.result_to_dict(cursor,result)
 
 def MainLoop():
-    db = DataBase()
-    db.get_librarian_connection()
     user = UserType.ANONYMOUS
     run_loop = True
     while run_loop:
@@ -205,7 +203,7 @@ def MainLoop():
             cmd = input('Selection: ')
 
             if cmd   == '1':
-                print('Assign book to patron') 
+                print('Assign book to patron')
             elif cmd == '2':
                 print('Process book return')
             elif cmd == '3':
