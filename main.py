@@ -303,11 +303,12 @@ class Views():
         cursor = connection.cursor()
 
         # Get all the books from Borrow that are overdue
-        cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
+        cursor.execute("SELECT * FROM Borrow WHERE duedate < CURRENT_DATE")
         query = cursor.fetchall()
         overduebooks = [db.result_to_dict(cursor,item) for item in query]
+        current_date = datetime.datetime.strftime(datetime.date.today(), FORMAT)
         print('------------------------------------------------')
-        print('Overdue Books:')
+        print('Overdue Books (Current Date: {}):'.format(current_date))
         print('------------------------------------------------')
         i = 0
         for book in overduebooks:
@@ -315,12 +316,10 @@ class Views():
             print('Patron Email: '  + book['email'])
             print('Borrow Date: '   + datetime.datetime.strftime(book['borrowdate'], FORMAT))
             print('Due Date: '      + datetime.datetime.strftime(book['duedate'], FORMAT))
-            print('Current Date: '  + datetime.datetime.strftime(book['current_date'], FORMAT))
             i = i + 1
             if i != len(query):
                 print('------------------------------------------------')
         print('\n')
-
 
         cursor.close()
         connection.close()

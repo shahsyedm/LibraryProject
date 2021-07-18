@@ -1,14 +1,18 @@
 -- Create Table Queries
 CREATE TABLE Books(ISBN CHAR(13) PRIMARY KEY,  Title VARCHAR(200), Subject VARCHAR(50), DatePublished DATE);
+
 CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastName VARCHAR(100), DOB Date);
-CREATE TABLE LibraryUser(
+
+CREATE TABLE LibraryUsers(
 	Email VARCHAR(100) PRIMARY KEY,
 	Password VARCHAR(100),  
 	FirstName VARCHAR(100), 
 	LastName VARCHAR(100), 
 	DOB DATE,
-	IsAdmin CHAR(1)
+	IsAdmin CHAR(1),
+	Salt CHAR(32)
 );
+
 CREATE TABLE Inventory(
 	ISBN CHAR(13) PRIMARY KEY NOT NULL,
 	Quantity INTEGER,
@@ -25,7 +29,7 @@ CREATE TABLE WrittenBy(
 
 CREATE TABLE Borrow(
 	ISBN CHAR(13) 	 REFERENCES Books,
-	Email VARCHAR(100)  REFERENCES Patrons,
+	Email VARCHAR(100)  REFERENCES LibraryUsers,
 	BorrowDate DATE,
 	DueDate DATE,
 	CONSTRAINT bw_pk PRIMARY KEY(Email, ISBN)
