@@ -44,7 +44,7 @@ class DataBase():
         return input(message).replace('\'', '')
 
     def get_clean_password(self, message):
-        return getpass(prompt='Password: ', stream=None).replace('\'', '')
+        return getpass(prompt=message, stream=None).replace('\'', '')
 
     # Description: can return a query result (one query as a dictionary)
     # This is useful for returning the user information 
@@ -65,6 +65,7 @@ def validate_form(formdata, cursor):
     email     = formdata['email']
     dob       = formdata['dob']
     password  = formdata['password']
+    conf_pass = formdata['conf_pass']
     # If anything is empty
     if len(firstname) == 0 or len(lastname) == 0 or len(dob) == 0 or len(password) == 0:
         print('Sorry, all fields are required')
@@ -90,6 +91,12 @@ def validate_form(formdata, cursor):
     except ValueError:
         print("This is the incorrect date format. It should be DD/MM/YYYY")
         return False
+
+    # If the passwords don't match
+    if password != conf_pass:
+        print("Sorry, the passwords do not match. Please try again.")
+        return False
+    
     return True
 
 class Views():
@@ -107,6 +114,7 @@ class Views():
         dob       = db.get_clean_input('Enter date of birth: ')
         email     = db.get_clean_input('Enter email: ')
         password  = db.get_clean_password('Enter password: ')
+        conf_pass = db.get_clean_password('Confirm password: ')
 
         # Check if the form is valid
         valid = validate_form(
@@ -115,7 +123,8 @@ class Views():
                 'lastname'  : lastname,
                 'dob'       : dob,
                 'email'     : email,
-                'password'  : password
+                'password'  : password,
+                'conf_pass' : conf_pass
             },
             cursor
         )
@@ -150,6 +159,11 @@ class Views():
         # Get user with that email
         cursor.execute("""SELECT email FROM LibraryUsers WHERE email = %s""",(email,))
         result = cursor.fetchone() # [email,isadmin]
+
+        if result == None:
+            print('Sorry, we could not authenticate your credentials.')
+            print('Returning to the main menu.\n')
+            return None
         result = db.result_to_dict(cursor,result) 
 
         # Take the password and hash to get the hashed password (stored in db)
@@ -320,7 +334,7 @@ class Views():
         query = cursor.fetchall()
         overduebooks = [db.result_to_dict(cursor,item) for item in query]
         current_date = datetime.datetime.strftime(datetime.date.today(), FORMAT)
-        print('------------------------------------------------')
+        print('\n------------------------------------------------')
         print('Overdue Books (Current Date: {}):'.format(current_date))
         print('------------------------------------------------')
         i = 0
@@ -337,6 +351,110 @@ class Views():
         cursor.close()
         connection.close()
 
+    def book_catalog_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_librarian_connection()
+        cursor = connection.cursor()
+
+        # Get all books
+        cursor.execute("""SELECT title,subject,
+	                            STRING_AGG(
+		                            firstname || ' ' || lastname, ', '
+	                            ) AS Authors,
+                                datepublished,isbn,quantity
+                            FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+                            NATURAL JOIN Inventory
+                            GROUP BY ISBN,Title,datepublished,quantity ORDER BY Title""")
+        query = cursor.fetchall()
+        books = [db.result_to_dict(cursor,item) for item in query]
+
+        # Print results
+        print('\n------------------------------------------------')
+        print('Book Catalog: ')
+        print('------------------------------------------------')
+        i = 0
+        for book in books:
+            print('Title: '          + book['title'])
+            print('Subject: '        + book['subject'])
+            print('Author(s): '      + book['authors'])
+            print('Date Published: ' + datetime.datetime.strftime(book['datepublished'], FORMAT))
+            print('ISBN: '           + book['isbn'])
+            print('Quantity: '      + str(book['quantity']) )
+            i = i + 1
+            if i != len(query):
+                print('')
+        print('\n')
+
+        cursor.close()
+        connection.close()
+
+    def registered_patrons_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_librarian_connection()
+        cursor = connection.cursor()
+
+        # Get all patrons
+        cursor.execute("SELECT * FROM LibraryUsers")
+        query = cursor.fetchall()
+        patrons = [db.result_to_dict(cursor,item) for item in query]
+
+        # Print results
+        print('\n------------------------------------------------')
+        print('Registered Patrons: ')
+        print('------------------------------------------------')
+        i = 0
+        for patron in patrons:
+            print('First Name: ' + patron['firstname'])
+            print('Last Name: '  + patron['lastname'])
+            print('Email: '      + patron['email'])
+            i = i + 1
+            if i != len(query):
+                print('------------------------------------------------')
+        print('\n')
+
+        cursor.close()
+        connection.close()
+    
+    def all_borrowed_books_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_librarian_connection()
+        cursor = connection.cursor()
+
+        # Get all the books the user is borrowing
+        cursor.execute("SELECT email,title,borrowdate,duedate,isbn FROM Borrow NATURAL JOIN Books")
+        query = cursor.fetchall()
+
+        # Convert list of tuples, to list of dictionaries
+        books = [db.result_to_dict(cursor,item) for item in query]
+
+        # Print out the results (print how many days till due, or if overdue)
+        print('\n------------------------------------------------')
+        print('All Borrowed Books: ')
+        print('------------------------------------------------')
+        i = 0
+        for book in books:
+            print('Patron Email: '    + book['email'])
+            print('Book Title: '      + book['title'])
+            print('Borrow Date: '     + datetime.datetime.strftime(book['borrowdate'], FORMAT))
+            print('Due Date: '        + datetime.datetime.strftime(book['duedate'], FORMAT))
+            print('ISBN: '            + book['isbn'])
+            i = i + 1
+            if i != len(books):
+                print('------------------------------------------------')
+        print('\n')
+
+        # Close the db connection
+        cursor.close()
+        connection.close()
 
 
     """  Patron Views  """
@@ -382,7 +500,7 @@ class Views():
         query = cursor.fetchall()
         query = [db.result_to_dict(cursor,item) for item in query]
 
-        print('------------------------------------------------')
+        print('\n------------------------------------------------')
         print('Search Results: ')
         print('------------------------------------------------')
         i = 0
@@ -411,8 +529,8 @@ class Views():
 
         # Get the books written by that author
         cursor.execute("""SELECT Title, FirstName, LastName, subject, datepublished, ISBN FROM Books 
-                    NATURAL JOIN WrittenBy NATURAL JOIN Authors 
-                    WHERE lastname = %s ORDER BY firstname,lastname""", (author_last_name,))
+                        NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+                        WHERE lastname = %s ORDER BY firstname,lastname""", (author_last_name,))
         
         query = cursor.fetchall()
         if len(query) == 0:
@@ -421,7 +539,7 @@ class Views():
 
         query = [db.result_to_dict(cursor,item) for item in query]
 
-        print('------------------------------------------------')
+        print('\n------------------------------------------------')
         print('Search Results: ')
         print('------------------------------------------------')
         i = 0
@@ -455,7 +573,7 @@ class Views():
         query = [db.result_to_dict(cursor,item) for item in query]
 
         # Print out the results (print how many days till due, or if overdue)
-        print('------------------------------------------------')
+        print('\n------------------------------------------------')
         print('My Borrowed Books: ')
         print('------------------------------------------------')
         i = 0
@@ -524,7 +642,7 @@ class Views():
         book = db.result_to_dict(cursor,query)
 
         # Print out the recommended book
-        print('------------------------------------------------')
+        print('\n------------------------------------------------')
         print('Here is your recommendation: ')
         print('------------------------------------------------')
         print('Title: '  + book['title'])
@@ -533,8 +651,7 @@ class Views():
         print('\n')
         # Close the db connection
         cursor.close()
-        connection.close()
-        
+        connection.close()        
 
 def MainLoop():
     # Session to hold any session data for keeping track of system state
@@ -589,9 +706,10 @@ def MainLoop():
             print('Select Option: ')
             print('1: Assign book to patron')   # Main feature  -DONE
             print('2: Process book return')     # Main feature  -DONE
-            print('3: View book catalog')       # Extra feature
-            print('4: View registered patrons') # Extra feature
-            print('5: View overdue books')      # Extra feature -DONE
+            print('3: View book catalog')       # Extra feature -DONE
+            print('4: View registered patrons') # Extra feature -DONE
+            print('5: View borrowed books')     # Last Feature  -
+            print('6: View overdue books')      # Extra feature -DONE
             print('q: quit')
             cmd = input('Selection: ')
 
@@ -602,10 +720,16 @@ def MainLoop():
                 view = Views()
                 view.process_return_view()
             elif cmd == '3':
-                print('View book catalog.')
+                view = Views()
+                view.book_catalog_view()
             elif cmd == '4':
                 print('View registered patrons')
+                view = Views()
+                view.registered_patrons_view()
             elif cmd == '5':
+                view = Views()
+                view.all_borrowed_books_view()
+            elif cmd == '6':
                 view = Views()
                 view.overdue_books_view()
             elif cmd == 'q':
