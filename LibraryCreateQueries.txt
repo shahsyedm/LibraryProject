@@ -40,6 +40,8 @@ CREATE TABLE Borrow(
 \copy WrittenBy(AuthorID, ISBN) FROM '/Users/syeda/Desktop/COP4710FinalProject/WrittenBy.csv' WITH DELIMITER ',' CSV HEADER;
 
 \copy Inventory(ISBN, Quantity) FROM '/Users/syeda/Desktop/COP4710FinalProject/Inventory.csv' WITH DELIMITER ',' CSV HEADER;
+
+TRUNCATE TABLE WrittenBy CASCADE;TRUNCATE TABLE Books CASCADE;TRUNCATE TABLE Authors CASCADE; TRUNCATE TABLE Inventory CASCADE;
 ------------------- Creating Users and Privileges -------------------------
 
 CREATE USER librarian with encrypted password 'password';
@@ -68,3 +70,4 @@ cursor.execute("SELECT title,duedate FROM Borrow NATURAL JOIN Books WHERE email 
 cursor.execute("SELECT Title, FirstName, LastName, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
               WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
+cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")

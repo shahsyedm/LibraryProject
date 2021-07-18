@@ -1,6 +1,7 @@
 import psycopg2
 from enum import Enum
 import datetime
+from getpass import getpass
 
 # Format for DATE
 FORMAT = "%m/%d/%Y" 
@@ -40,6 +41,9 @@ class DataBase():
     # Clean input function (remove ' from input ) for SQL injection defense
     def get_clean_input(self, message):
         return input(message).replace('\'', '')
+
+    def get_clean_password(self, message):
+        return getpass(prompt='Password: ', stream=None).replace('\'', '')
 
     # Description: can return a query result (one query as a dictionary)
     # This is useful for returning the user information 
@@ -101,7 +105,7 @@ class Views():
         lastname  = db.get_clean_input('Enter last name: ')
         dob       = db.get_clean_input('Enter date of birth: ')
         email     = db.get_clean_input('Enter email: ')
-        password  = db.get_clean_input('Enter password: ')
+        password  = db.get_clean_password('Enter password: ')
 
         # Check if the form is valid
         valid = validate_form(
@@ -137,7 +141,7 @@ class Views():
 
         # Ask user for email and password
         email    = db.get_clean_input('Email: ')
-        password = db.get_clean_input('Password: ')
+        password = db.get_clean_password('Password: ')
 
         # Get user with that email and password
         cursor.execute("""SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s""",(email,password))
@@ -290,6 +294,41 @@ class Views():
         cursor.close()
         connection.close()
     
+    def overdue_books_view(self):
+        # Get DB connection class
+        db = DataBase()
+
+        # Get the DB cursor
+        connection = db.get_librarian_connection()
+        cursor = connection.cursor()
+
+        # Get all the books from Borrow that are overdue
+        cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
+        query = cursor.fetchall()
+        overduebooks = [db.result_to_dict(cursor,item) for item in query]
+        print('------------------------------------------------')
+        print('Overdue Books:')
+        print('------------------------------------------------')
+        i = 0
+        for book in overduebooks:
+            print('ISBN: '          + book['isbn'])
+            print('Patron Email: '  + book['email'])
+            print('Borrow Date: '   + datetime.datetime.strftime(book['borrowdate'], FORMAT))
+            print('Due Date: '      + datetime.datetime.strftime(book['duedate'], FORMAT))
+            print('Current Date: '  + datetime.datetime.strftime(book['current_date'], FORMAT))
+            i = i + 1
+            if i != len(query):
+                print('------------------------------------------------')
+        print('\n')
+
+
+        cursor.close()
+        connection.close()
+
+
+
+    """  Patron Views  """
+    
     def search_by_subject_view(self):
         # Get DB connection class
         db = DataBase()
@@ -325,18 +364,20 @@ class Views():
         cursor.execute(  """SELECT title,isbn,
 	                            STRING_AGG(
 		                            firstname || ' ' || lastname, ', '
-	                            ) 
+	                            ) AS Authors
                             FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
-                            WHERE subject = 'Sports' GROUP BY ISBN;""", (subject,))
+                            WHERE subject = %s GROUP BY ISBN;""", (subject,))
         query = cursor.fetchall()
+        query = [db.result_to_dict(cursor,item) for item in query]
+
         print('------------------------------------------------')
         print('Search Results: ')
         print('------------------------------------------------')
         i = 0
         for book in query:
-            print('Title: '  + book[0])
-            print('Author: ' + book[1])
-            print('ISBN: '   + book[2])
+            print('Title: '  + book['title'])
+            print('Author(s): ' + book['authors'])
+            print('ISBN: '   + book['isbn'])
             i = i + 1
             if i != len(query):
                 print('------------------------------------------------')
@@ -481,6 +522,7 @@ class Views():
         # Close the db connection
         cursor.close()
         connection.close()
+        
 
 def MainLoop():
     # Session to hold any session data for keeping track of system state
@@ -548,11 +590,12 @@ def MainLoop():
                 view = Views()
                 view.process_return_view()
             elif cmd == '3':
-                print('View book catalog')
+                print('View book catalog.')
             elif cmd == '4':
                 print('View registered patrons')
             elif cmd == '5':
-                print('View overdue books')
+                view = Views()
+                view.overdue_books_view()
             elif cmd == 'q':
                 run_loop = False
                 print('Goodbye.')
