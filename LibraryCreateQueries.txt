@@ -5,12 +5,11 @@ CREATE TABLE Authors(AuthorID CHAR(9) PRIMARY KEY, FirstName VARCHAR(100), LastN
 
 CREATE TABLE LibraryUsers(
 	Email VARCHAR(100) PRIMARY KEY,
-	Password VARCHAR(100),  
+	Password CHAR(128),  
 	FirstName VARCHAR(100), 
 	LastName VARCHAR(100), 
 	DOB DATE,
-	IsAdmin CHAR(1),
-	Salt CHAR(32)
+	IsAdmin CHAR(1)
 );
 
 CREATE TABLE Inventory(
@@ -55,8 +54,9 @@ GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
 CREATE USER patron with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO patron;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
+GRANT INSERT ON LibraryUsers TO patron;
 
-------------------------------------------------
+----------------------- Queries -------------------------
 cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,))
 cursor.execute("SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s",(email,password))
 cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,))
@@ -75,3 +75,6 @@ cursor.execute("SELECT Title, FirstName, LastName, ISBN
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
               WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
 cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
+
+----------------------- VIEWS -------------------------
+CREATE VIEW LoginView AS SELECT email,password,isadmin FROM LibraryUsers;

@@ -2,7 +2,6 @@ import psycopg2
 from enum import Enum
 import datetime
 from getpass import getpass
-import hashlib
 
 # Format for DATE
 FORMAT = "%m/%d/%Y" 
@@ -121,9 +120,6 @@ class Views():
         )
 
         if valid:
-            # Take the password and hash to get a hashed password (store safely in db)
-            pass_hashed    = hashlib.sha3_512(password.encode())
-            password       = pass_hashed.hexdigest()
             cursor.execute(
                 """INSERT INTO LibraryUsers(email,firstname,lastname,dob,isadmin,password) 
                 VALUES (%s, %s, %s, %s, %s, %s)""", 
@@ -147,17 +143,8 @@ class Views():
         email    = db.get_clean_input('Email: ')
         password = db.get_clean_password('Password: ')
 
-        # Get user with that email
-        cursor.execute("""SELECT email FROM LibraryUsers WHERE email = %s""",(email,))
-        result = cursor.fetchone() # [email,isadmin]
-        result = db.result_to_dict(cursor,result) 
-
-        # Take the password and hash to get the hashed password (stored in db)
-        pass_hashed    = hashlib.sha3_512(password.encode())
-        password       = pass_hashed.hexdigest()
-
         # Get user with that email and password
-        cursor.execute("""SELECT email,isadmin FROM LoginView WHERE email = %s AND password = %s""",(email,password))
+        cursor.execute("""SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s""",(email,password))
         result = cursor.fetchone() # [email,isadmin]
 
         # Return the result of the query which is either:
@@ -587,11 +574,11 @@ def MainLoop():
         if session_data['user']== UserType.LIBRARIAN:
             print('---------------- Librarian Menu ({})----------------'.format(session_data['email']))
             print('Select Option: ')
-            print('1: Assign book to patron')   # Main feature  -DONE
-            print('2: Process book return')     # Main feature  -DONE
+            print('1: Assign book to patron')   # Main feature -DONE
+            print('2: Process book return')     # Main feature -DONE
             print('3: View book catalog')       # Extra feature
             print('4: View registered patrons') # Extra feature
-            print('5: View overdue books')      # Extra feature -DONE
+            print('5: View overdue books')      # Extra feature
             print('q: quit')
             cmd = input('Selection: ')
 
