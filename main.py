@@ -2,6 +2,7 @@ import psycopg2
 from enum import Enum
 import datetime
 
+# Format for DATE
 FORMAT = "%m/%d/%Y" 
 
 # UserType enumeration
@@ -321,9 +322,12 @@ class Views():
 
         # Get the subject
         subject = subjects[cmd-1]
-        cursor.execute("""SELECT Title, FirstName, LastName, ISBN FROM Books 
-                          NATURAL JOIN WrittenBy NATURAL JOIN Authors 
-                          WHERE subject = %s""", (subject,))
+        cursor.execute(  """SELECT title,isbn,
+	                            STRING_AGG(
+		                            firstname || ' ' || lastname, ', '
+	                            ) 
+                            FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+                            WHERE subject = 'Sports' GROUP BY ISBN;""", (subject,))
         query = cursor.fetchall()
         print('------------------------------------------------')
         print('Search Results: ')
@@ -331,8 +335,8 @@ class Views():
         i = 0
         for book in query:
             print('Title: '  + book[0])
-            print('Author: ' + book[1] + ' ' + book[2])
-            print('ISBN: '   + book[3])
+            print('Author: ' + book[1])
+            print('ISBN: '   + book[2])
             i = i + 1
             if i != len(query):
                 print('------------------------------------------------')
