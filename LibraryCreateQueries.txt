@@ -15,8 +15,8 @@ CREATE TABLE LibraryUsers(
 CREATE TABLE Inventory(
 	ISBN CHAR(13) PRIMARY KEY NOT NULL,
 	Quantity INTEGER,
-	CONSTRAINT book_fk FOREIGN KEY(ISBN) REFERENCES Books(ISBN)
-	ON DELETE CASCADE
+	CONSTRAINT book_fk FOREIGN KEY(ISBN) REFERENCES Books(ISBN) ON DELETE CASCADE,
+	CONSTRAINT quantity_check CHECK (quantity>=0)
 );
 
 ------------------- Relationship Tables -------------------------
@@ -47,7 +47,9 @@ CREATE TABLE Borrow(
 
 \copy Inventory(ISBN, Quantity) FROM '/Users/syeda/Desktop/COP4710FinalProject/Inventory.csv' WITH DELIMITER ',' CSV HEADER;
 
-TRUNCATE TABLE WrittenBy CASCADE;TRUNCATE TABLE Books CASCADE;TRUNCATE TABLE Authors CASCADE; TRUNCATE TABLE Inventory CASCADE;
+-- TRUNCATE TABLE WrittenBy CASCADE;TRUNCATE TABLE Books CASCADE;TRUNCATE TABLE Authors 
+-- CASCADE; TRUNCATE TABLE Inventory CASCADE;
+
 ------------------- Creating Users and Privileges -------------------------
 
 CREATE USER librarian with encrypted password 'password';
