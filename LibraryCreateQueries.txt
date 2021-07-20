@@ -81,5 +81,12 @@ cursor.execute("SELECT Title, FirstName, LastName, ISBN
               WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
 cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
 
------------------------ VIEWS -------------------------
+----------------------- Views -------------------------
 CREATE VIEW LoginView AS SELECT email,password,isadmin FROM LibraryUsers;
+
+
+----------------------- Indexes -------------------------
+CREATE INDEX email_index ON LibraryUsers USING HASH (email);
+CREATE INDEX subject_index ON Books USING HASH (subject);
+CREATE INDEX isbn_index ON Books USING HASH (isbn);
+CREATE INDEX lastname_index ON Authors USING HASH (lastname); 
