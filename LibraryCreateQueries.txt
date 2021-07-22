@@ -96,6 +96,9 @@ cursor.execute("""SELECT title,subject,
 -- Registered patron report (used by librarian)
 cursor.execute("SELECT * FROM LibraryUsers")
 
+-- Get all the books lent out to users (used by librarian)
+cursor.execute("SELECT email,title,borrowdate,duedate,isbn FROM Borrow NATURAL JOIN Books")
+
 -- Used by librarian to see overdue books
 cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
 
