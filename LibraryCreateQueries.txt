@@ -72,25 +72,38 @@ cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,)) -- check
 -- user login
 cursor.execute("SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s",(email,password))
 
--- Assignng book
-cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,))
-cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))
+-- Assigning book
+cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,)) 			-- Get the book by isbn
+cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))	-- Check availability of the book
 
 	-- If the book is unavailable, get the most recent due date for that book
 	cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
 
+-- Used when processing a return
 cursor.execute("SELECT * FROM Borrow WHERE email = %s AND isbn = %s", (email,isbn))
+
+-- Get the unique number of subjects in the database, used by program when searching for subjects
 cursor.execute("SELECT DISTINCT subject FROM Books")
+
+-- Used when searching for books by subject
 cursor.execute("SELECT Title, FirstName, LastName, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
 		WHERE subject = %s", (subject,))
+		
+-- Used when searching for books by author's last name
 cursor.execute("SELECT Title, FirstName, LastName, subject, datepublished, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
 		WHERE lastname = %s ORDER BY firstname,lastname", (author_last_name,))
+
+-- Used by patron when they want to see their borrowed books
 cursor.execute("SELECT title,duedate FROM Borrow NATURAL JOIN Books WHERE email = %s", (email,))
+
+-- Used by patron for random book recommendation of the selected subject
 cursor.execute("SELECT Title, FirstName, LastName, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
               WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
+	      
+-- Used by librarian to see overdue books
 cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
 
 ----------------------- Views -------------------------
