@@ -66,11 +66,19 @@ GRANT INSERT ON LibraryUsers TO patron;
 GRANT SELECT ON LoginView TO patron;
 
 ----------------------- Queries -------------------------
-cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,))
+-- user signup
+cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,)) -- check the email isn't in use
+
+-- user login
 cursor.execute("SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s",(email,password))
+
+-- Assignng book
 cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,))
 cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))
-cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
+
+	-- If the book is unavailable, get the most recent due date for that book
+	cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
+
 cursor.execute("SELECT * FROM Borrow WHERE email = %s AND isbn = %s", (email,isbn))
 cursor.execute("SELECT DISTINCT subject FROM Books")
 cursor.execute("SELECT Title, FirstName, LastName, ISBN 
