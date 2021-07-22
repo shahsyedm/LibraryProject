@@ -66,45 +66,63 @@ GRANT INSERT ON LibraryUsers TO patron;
 GRANT SELECT ON LoginView TO patron;
 
 ----------------------- Queries -------------------------
+
 -- user signup
 cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,)) -- check the email isn't in use
 
--- user login
+-- user login (For both librarian and patron)
 cursor.execute("SELECT email,isadmin FROM LibraryUsers WHERE email = %s AND password = %s",(email,password))
 
--- Assigning book
+-- Assigning book (used by librarian)
 cursor.execute("SELECT * FROM Books WHERE isbn = %s", (isbn,)) 			-- Get the book by isbn
 cursor.execute("SELECT * FROM Inventory WHERE isbn = %s", (book['isbn'],))	-- Check availability of the book
 
 	-- If the book is unavailable, get the most recent due date for that book
 	cursor.execute("SELECT duedate FROM Borrow WHERE isbn = %s ORDER BY duedate LIMIT 1", (book['isbn'],))
 
--- Used when processing a return
+-- Used when processing a return (used by librarian)
 cursor.execute("SELECT * FROM Borrow WHERE email = %s AND isbn = %s", (email,isbn))
 
--- Get the unique number of subjects in the database, used by program when searching for subjects
+-- Book catalog report (used by librarian)
+cursor.execute("""SELECT title,subject,
+			    STRING_AGG(
+				    firstname || ' ' || lastname, ', '
+			    ) AS Authors,
+			datepublished,isbn,quantity
+		    FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+		    NATURAL JOIN Inventory
+		    GROUP BY ISBN,Title,datepublished,quantity ORDER BY Title""")
+		    
+-- Registered patron report (used by librarian)
+cursor.execute("SELECT * FROM LibraryUsers")
+
+-- Used by librarian to see overdue books
+cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
+
+-- Get the unique number of subjects in the database, used by program when searching for subjects (used by patron)
 cursor.execute("SELECT DISTINCT subject FROM Books")
 
--- Used when searching for books by subject
-cursor.execute("SELECT Title, FirstName, LastName, ISBN 
-		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
-		WHERE subject = %s", (subject,))
+-- Used when searching for books by subject (group the author names together if the book has multiple authors) (used by patron)
+cursor.execute(  """SELECT title,isbn,
+			    STRING_AGG(
+				    firstname || ' ' || lastname, ', '
+			    ) AS Authors
+		    FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
+		    WHERE subject = %s GROUP BY ISBN;""", (subject,))
 		
--- Used when searching for books by author's last name
+-- Used when searching for books by author's last name (used by patron)
 cursor.execute("SELECT Title, FirstName, LastName, subject, datepublished, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
 		WHERE lastname = %s ORDER BY firstname,lastname", (author_last_name,))
 
--- Used by patron when they want to see their borrowed books
+-- Used by patron when they want to see their borrowed books (used by patron)
 cursor.execute("SELECT title,duedate FROM Borrow NATURAL JOIN Books WHERE email = %s", (email,))
 
 -- Used by patron for random book recommendation of the selected subject
 cursor.execute("SELECT Title, FirstName, LastName, ISBN 
 		FROM Books NATURAL JOIN WrittenBy NATURAL JOIN Authors 
               WHERE subject = %s ORDER BY RANDOM() LIMIT 1", (subject,))
-	      
--- Used by librarian to see overdue books
-cursor.execute("SELECT *,CURRENT_DATE FROM Borrow WHERE duedate < CURRENT_DATE")
+	   
 
 ----------------------- Views -------------------------
 CREATE VIEW LoginView AS SELECT email,password,isadmin FROM LibraryUsers;
