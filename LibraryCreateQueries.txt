@@ -57,9 +57,13 @@ GRANT CONNECT ON DATABASE bookstore TO librarian;
 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
 
 CREATE USER patron with encrypted password 'password';
-GRANT CONNECT ON DATABASE bookstore TO patron;
-GRANT SELECT ON ALL TABLES IN SCHEMA public TO patron;
+GRANT CONNECT ON DATABASE bookstore2 TO patron;
+GRANT SELECT ON Authors TO patron;
+GRANT SELECT ON Books TO patron;
+GRANT SELECT ON WrittenBy TO patron;
+GRANT SELECT ON Borrow TO patron;
 GRANT INSERT ON LibraryUsers TO patron;
+GRANT SELECT ON LoginView TO patron;
 
 ----------------------- Queries -------------------------
 cursor.execute("SELECT * FROM LibraryUsers WHERE email = %s", (email,))
