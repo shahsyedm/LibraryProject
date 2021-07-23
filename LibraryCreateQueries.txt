@@ -55,6 +55,7 @@ CREATE TABLE Borrow(
 CREATE USER librarian with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO librarian;
 GRANT SELECT,INSERT,UPDATE,DELETE ON ALL TABLES IN SCHEMA public TO librarian;
+GRANT SELECT ON LoginView TO librarian;
 
 CREATE USER patron with encrypted password 'password';
 GRANT CONNECT ON DATABASE bookstore TO patron;
